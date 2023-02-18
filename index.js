@@ -125,24 +125,11 @@ class DataAggregator {
     });
   }
 
-  /*
-  _group(data, group) {
-
-    // First Group by the _id filed 
-
-    // Then add the aggregation functions to the data 
-
-    // then return the aggregated data
-
-  }
-
-  */
-
   /**
    * @description Perform aggregation on the given data set
    * @param {*} funcName | Name of the aggregation function
    * @param {*} data | Data array
-   * @returns 
+   * @returns
    */
   _aggregationHandler(funcName, data) {
     switch (funcName) {
@@ -160,9 +147,9 @@ class DataAggregator {
   }
 
   /**
-   * 
+   *
    * @param {*} val Mongo aggregation key
-   * @returns 
+   * @returns
    */
   $extractor(val) {
     return val.split('$')[1];
@@ -197,8 +184,11 @@ class DataAggregator {
       for (const field in group) {
         if (field !== '_id') {
 
-          const aggregateFunction = group[field];
-          const fieldValues = groupDocs.map(doc => doc[field]);
+          let projectionAlias = field;
+          let dbField = this.$extractor(Object.values(group[projectionAlias])[0]);
+
+          const aggregateFunction = group[projectionAlias];
+          const fieldValues = groupDocs.map(doc => doc[dbField]);
           let aggregateResult;
 
           if (typeof aggregateFunction === 'string') {
@@ -215,7 +205,7 @@ class DataAggregator {
             throw new Error(`Invalid aggregate function type: ${typeof aggregateFunction}`);
           }
 
-          groupResult[field] = aggregateResult;
+          groupResult[projectionAlias] = aggregateResult;
         }
       }
 
@@ -238,26 +228,28 @@ class DataAggregator {
       const newDoc = {};
       for (const field of fields) {
         const value = projection[field];
-        if (typeof value === 'string') {
-          newDoc[field] = doc[value];
-        } else if (typeof value === 'object') {
-          const operator = Object.keys(value)[0];
-          const target = value[operator];
-          switch (operator) {
-            case '$add':
-              newDoc[field] = doc[target[0]] + doc[target[1]];
-              break;
-            case '$subtract':
-              newDoc[field] = doc[target[0]] - doc[target[1]];
-              break;
-            case '$multiply':
-              newDoc[field] = doc[target[0]] * doc[target[1]];
-              break;
-            case '$divide':
-              newDoc[field] = doc[target[0]] / doc[target[1]];
-              break;
-            default:
-              throw new Error(`Unknown projection operator: ${operator}`);
+        if (field in doc) {
+          if (typeof value === 'string' || typeof value === 'number') {
+            newDoc[field] = doc[field];
+          } else if (typeof value === 'object') {
+            const operator = Object.keys(value)[0];
+            const target = value[operator];
+            switch (operator) {
+              case '$add':
+                newDoc[field] = doc[target[0]] + doc[target[1]];
+                break;
+              case '$subtract':
+                newDoc[field] = doc[target[0]] - doc[target[1]];
+                break;
+              case '$multiply':
+                newDoc[field] = doc[target[0]] * doc[target[1]];
+                break;
+              case '$divide':
+                newDoc[field] = doc[target[0]] / doc[target[1]];
+                break;
+              default:
+                throw new Error(`Unknown projection operator: ${operator}`);
+            }
           }
         }
       }
