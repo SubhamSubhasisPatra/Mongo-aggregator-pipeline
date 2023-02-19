@@ -134,6 +134,12 @@ class DataAggregator {
   _aggregationHandler(funcName, data) {
     switch (funcName) {
       case '$sum':
+        if (data.length === 0) {
+          return 0;
+        }
+        if (typeof data[0] === 'object') {
+          return data.length;
+        }
         return data.reduce((acc, val) => acc + val, 0);
       case '$avg':
         return ((data.reduce((acc, val) => acc + val, 0) / data.length)) / 2;
@@ -152,7 +158,7 @@ class DataAggregator {
    * @returns
    */
   $extractor(val) {
-    return val.split('$')[1];
+    return val === 1 ? 1 : val.split('$')[1];
   }
 
   /**
@@ -163,7 +169,9 @@ class DataAggregator {
    */
   _group(data, group) {
     const groups = {};
-    let genGrpKey = this.$extractor(Object.values(group['_id'])[0]);
+    //NOTE: Eanble this like for obect like grouping
+    // let genGrpKey = this.$extractor(Object.values(group['_id'])[0]);
+    let genGrpKey = this.$extractor(group['_id']);
 
     for (const doc of data) {
       const groupValue = doc[genGrpKey];
@@ -188,7 +196,7 @@ class DataAggregator {
           let dbField = this.$extractor(Object.values(group[projectionAlias])[0]);
 
           const aggregateFunction = group[projectionAlias];
-          const fieldValues = groupDocs.map(doc => doc[dbField]);
+          const fieldValues = dbField === 1 ? groupDocs : groupDocs.map(doc => doc[dbField]);
           let aggregateResult;
 
           if (typeof aggregateFunction === 'string') {
