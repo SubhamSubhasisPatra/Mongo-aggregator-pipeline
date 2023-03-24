@@ -57,73 +57,83 @@ class DataAggregator {
     return data;
   }
 
-  /**
-   * @private: Filter the data based on the given match condition
-   * @param data: An array of objects to filter
-   * @param filter: The match condition to apply
-   * @returns: The filtered data
-   */
-  _match(data, filter) {
-    return data.filter(doc => {
-      for (const key in filter) {
-        const filterValue = filter[key];
-        const docValue = doc[key];
+/**
+ * @private: Filter the data based on the given match condition
+ * @param data: An array of objects to filter
+ * @param filter: The match condition to apply
+ * @returns: The filtered data
+ */
+_match(data, filter) {
+  return data.filter(doc => {
+    const conditions = [];
 
-        if (typeof filterValue === 'object') {
-          for (const operator in filterValue) {
-            const opValue = filterValue[operator];
+    for (const key in filter) {
+      const filterValue = filter[key];
+      const docValue = doc[key];
 
-            switch (operator) {
-              case '$eq':
-                if (docValue !== opValue) {
-                  return false;
-                }
-                break;
+      if (typeof filterValue === 'object') {
+        for (const operator in filterValue) {
+          const opValue = filterValue[operator];
 
-              case '$ne':
-                if (docValue === opValue) {
-                  return false;
-                }
-                break;
+          switch (operator) {
+            case '$eq':
+              conditions.push(docValue === opValue);
+              break;
 
-              case '$gt':
-                if (docValue <= opValue) {
-                  return false;
-                }
-                break;
+            case '$ne':
+              conditions.push(docValue !== opValue);
+              break;
 
-              case '$gte':
-                if (docValue < opValue) {
-                  return false;
-                }
-                break;
+            case '$gt':
+              conditions.push(docValue > opValue);
+              break;
 
-              case '$lt':
-                if (docValue >= opValue) {
-                  return false;
-                }
-                break;
+            case '$gte':
+              conditions.push(docValue >= opValue);
+              break;
 
-              case '$lte':
-                if (docValue > opValue) {
-                  return false;
-                }
-                break;
+            case '$lt':
+              conditions.push(docValue < opValue);
+              break;
 
-              default:
-                throw new Error(`Unknown operator: ${operator}`);
-            }
-          }
-        } else {
-          if (docValue !== filterValue) {
-            return false;
+            case '$lte':
+              conditions.push(docValue <= opValue);
+              break;
+
+            case '$and':
+              if (!Array.isArray(opValue)) {
+                throw new Error(`Invalid value for $and operator: ${opValue}`);
+              }
+              conditions.push(this._match([doc], { $and: opValue }).length === 1);
+              break;
+
+            case '$or':
+              if (!Array.isArray(opValue)) {
+                throw new Error(`Invalid value for $or operator: ${opValue}`);
+              }
+              conditions.push(this._match([doc], { $or: opValue }).length === 1);
+              break;
+
+            case '$in':
+              if (!Array.isArray(opValue)) {
+                throw new Error(`Invalid value for $in operator: ${opValue}`);
+              }
+              conditions.push(opValue.includes(docValue));
+              break;
+
+            default:
+              throw new Error(`Unknown operator: ${operator}`);
           }
         }
+      } else {
+        conditions.push(docValue === filterValue);
       }
+    }
 
-      return true;
-    });
-  }
+    return conditions.every(c => c);
+  });
+}
+
 
   /**
    * @description Perform aggregation on the given data set
