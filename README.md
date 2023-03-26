@@ -11,7 +11,7 @@
 
 
     const pipeline = [
-        { $match: { color: 'red' } },
+        { $match: { color: 'green' } },
         //{ $group: { _id: { category: '$category' }, totalSale: { $sum: '$sales' } } }, 
         { $group: { _id: '$category' , totalSale: { $sum: 1 } } },
         { $group: { _id: { category: '$category' }, totalSale: { $sum: '$sales' } } },
