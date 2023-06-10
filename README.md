@@ -1,6 +1,6 @@
 ## Mongo Aggregatio pipe 
 
-<p> This library will mimic the abstact view of mongo aggregatio pipe line , and it can be applied on any json stream from any stream , plug it in and it will work like a Driver level aggregator </p>
+<p> This library will mimic the abstact view of mongo aggregatio pipe line , and it can be applied on any json stream from any stream, plug it in and it will work like a Driver level aggregator </p>
 
 ## Test Code 
 
